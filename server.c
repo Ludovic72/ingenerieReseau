@@ -7,38 +7,50 @@ Serveur à lancer avant le client
 #include <sys/socket.h>
 #include <netdb.h> 		/* pour hostent, servent */
 #include <string.h> 		/* pour bcopy, ... */  
+#include "clientData.h"
 #define TAILLE_MAX_NOM 256
+#define PRIX_JUSTE 100;
+
+
+
 
 typedef struct sockaddr sockaddr;
 typedef struct sockaddr_in sockaddr_in;
 typedef struct hostent hostent;
 typedef struct servent servent;
 
+int compteEtBon(int testClient){
+  int difference = 0;
+  difference =testClient -  PRIX_JUSTE;
+  if(difference < 0){
+    return -1 * difference;
+  }
+  return difference;
+}
+
 /*------------------------------------------------------*/
 void renvoi (int sock) {
-
-    char buffer[256];
+    int choixClient = 0;
+    char* buffer;
     int longueur;
    
+    //if ((longueur = read(sock, buffer, sizeof(buffer))) <= 0) 
     if ((longueur = read(sock, buffer, sizeof(buffer))) <= 0) 
     	return;
     
-    printf("message lu : %s \n", buffer);
-    
-    buffer[0] = 'R';
-    buffer[1] = 'E';
-    buffer[longueur] = '#';
-    buffer[longueur+1] ='\0';
-    
-    printf("message apres traitement : %s \n", buffer);
-    
-    printf("renvoi du message traite.\n");
+    choixClient = atoi(buffer);
+    printf("convertis en int : %d \n", choixClient);
 
+    choixClient = compteEtBon(choixClient);
+    printf("message apres traitement : %d \n", choixClient);
+   
+    printf("renvoi du message traite.\n");
+    sprintf(buffer, "%d" ,choixClient);
     /* mise en attente du prgramme pour simuler un delai de transmission */
     sleep(3);
     
-    write(sock,buffer,strlen(buffer)+1);
-    
+    write(sock,buffer, strlen(buffer)+1);
+
     printf("message envoye. \n");
         
     return;
@@ -52,18 +64,22 @@ main(int argc, char **argv) {
     int 		socket_descriptor, 		/* descripteur de socket */
 			nouv_socket_descriptor, 	/* [nouveau] descripteur de socket */
 			longueur_adresse_courante; 	/* longueur d'adresse courante d'un client */
+			
     sockaddr_in 	adresse_locale, 		/* structure d'adresse locale*/
 			adresse_client_courant; 	/* adresse client courant */
+			
     hostent*		ptr_hote; 			/* les infos recuperees sur la machine hote */
+    
     servent*		ptr_service; 			/* les infos recuperees sur le service de la machine */
+    
     char 		machine[TAILLE_MAX_NOM+1]; 	/* nom de la machine locale */
     
     gethostname(machine,TAILLE_MAX_NOM);		/* recuperation du nom de la machine */
     
     /* recuperation de la structure d'adresse en utilisant le nom */
     if ((ptr_hote = gethostbyname(machine)) == NULL) {
-		perror("erreur : impossible de trouver le serveur a partir de son nom.");
-		exit(1);
+      perror("erreur : impossible de trouver le serveur a partir de son nom.");
+      exit(1);
     }
     
     /* initialisation de la structure adresse_locale avec les infos recuperees */			
@@ -95,14 +111,14 @@ main(int argc, char **argv) {
     
     /* creation de la socket */
     if ((socket_descriptor = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-		perror("erreur : impossible de creer la socket de connexion avec le client.");
-		exit(1);
+      perror("erreur : impossible de creer la socket de connexion avec le client.");
+      exit(1);
     }
 
     /* association du socket socket_descriptor à la structure d'adresse adresse_locale */
     if ((bind(socket_descriptor, (sockaddr*)(&adresse_locale), sizeof(adresse_locale))) < 0) {
-		perror("erreur : impossible de lier la socket a l'adresse de connexion.");
-		exit(1);
+      perror("erreur : impossible de lier la socket a l'adresse de connexion.");
+      exit(1);
     }
     
     /* initialisation de la file d'ecoute */
